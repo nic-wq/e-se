@@ -8,43 +8,27 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
-    <style>
-      .vote-card {
-        background: rgba(255, 255, 255, 0.05);
-        border: 2px solid rgba(255, 255, 255, 0.1);
-        padding: 2rem;
-        border-radius: 1.5rem;
-        cursor: pointer;
-        transition: all 0.3s;
-        text-align: center;
-        font-size: 1.8rem;
-        font-weight: 700;
-        width: 100%;
-        max-width: 600px;
-        margin-bottom: 1.5rem;
-      }
-      .vote-card:hover {
-        border-color: var(--primary);
-        background: rgba(0, 210, 255, 0.1);
-        transform: scale(1.02);
-      }
-      .admin-controls {
-        position: fixed;
-        bottom: 2rem;
-        right: 2rem;
-        display: flex;
-        gap: 1rem;
-      }
-      .kick-btn {
-        background: #ff4d4d;
-        font-size: 0.8rem;
-        padding: 0.5rem;
-        max-width: 80px;
-      }
-    </style>
   </head>
   <body>
     <div class="background-grid"></div>
+
+    <!-- Notificações -->
+    <div id="toast-container"></div>
+
+    <!-- Botão de Denúncia -->
+    <div id="report-btn-wrapper" style="display: none;">
+      <div class="report-btn" title="Denunciar Anti-Jogo">🚩</div>
+    </div>
+
+    <!-- Modal de Denúncia -->
+    <div id="report-modal" class="modal">
+      <div class="modal-content">
+        <h2 style="margin-top:0; color:var(--error);">Denunciar Anti-Jogo</h2>
+        <p style="font-size:0.9rem; color:#888;">Selecione quem está estragando a diversão. (3 denúncias = Expulsão)</p>
+        <div id="player-report-list" class="player-list-report"></div>
+        <button id="close-modal-btn" style="background:transparent; border:1px solid #333; margin-top:1rem; padding:0.8rem;">Fechar</button>
+      </div>
+    </div>
 
     <div class="container">
       <h1 id="game-title">E se...</h1>
@@ -52,62 +36,66 @@
       <!-- TELA: LOGIN -->
       <div id="login-screen" class="game-screen" style="display: flex;">
         <div class="field">
-          <label>Servidor</label>
+          <label>Endereço do Servidor</label>
           <input type="text" id="server-url" value="ws://localhost:3000" />
         </div>
         <div class="field">
-          <label>Seu Nickname</label>
-          <input type="text" id="nickname" placeholder="Nickname" maxlength="15" />
+          <label>Como quer ser chamado?</label>
+          <input type="text" id="nickname" placeholder="Seu Nickname" maxlength="15" />
         </div>
         <div class="field" id="admin-field" style="display: none;">
-          <label>Senha do Admin</label>
+          <label>Chave de Admin</label>
           <input type="password" id="admin-password" placeholder="••••••" />
         </div>
-        <button id="connect-btn">Entrar como Jogador</button>
-        <button id="admin-mode-btn" style="background: transparent; border: 1px solid var(--primary); margin-top: 1rem; font-size: 0.9rem; padding: 0.8rem;">Entrar como Admin</button>
+        <button id="connect-btn">Entrar na Sala</button>
+        <button id="admin-mode-btn" style="background: transparent; border: 1px solid var(--primary); margin-top: 1.5rem; font-size: 0.8rem; padding: 0.8rem;">Entrar como Admin</button>
       </div>
 
       <!-- TELA: LOBBY -->
       <div id="lobby-screen" class="game-screen">
-        <div id="room-info" style="font-size: 1.5rem; margin-bottom: 2rem; color: #888;">Aguardando...</div>
+        <div id="room-info" style="font-size: 1.2rem; margin-bottom: 2.5rem; color: var(--primary); letter-spacing: 2px;">AGUARDANDO JOGADORES</div>
         <div class="player-list" id="player-list"></div>
         <div id="host-controls" style="margin-top: 4rem; display: none;">
           <button id="start-btn">Começar Partida</button>
-          <button id="reset-btn" style="background: #444; margin-top: 1rem;">Resetar Tudo</button>
+          <button id="reset-btn" style="background: #222; margin-top: 1rem; border: 1px solid #444;">Resetar Jogo</button>
         </div>
       </div>
 
-      <!-- TELA: CRIAR OCASIÃO (PROMPT) -->
+      <!-- TELA: PROMPT -->
       <div id="prompt-screen" class="game-screen">
-        <div id="prompt-instruction" style="font-size: 1.5rem; margin-bottom: 2rem;">Você é o mestre! Crie uma ocasião...</div>
+        <div style="font-size: 1.2rem; margin-bottom: 2rem; color: var(--primary); font-weight: 800; text-transform: uppercase;">Você é o Mestre!</div>
         <textarea id="prompt-input" placeholder="E se..."></textarea>
-        <button id="submit-prompt-btn" style="margin-top: 2rem;">Enviar Ocasião</button>
+        <button id="submit-prompt-btn" style="margin-top: 2rem;">Lançar Ocasião</button>
       </div>
 
-      <!-- TELA: ENVIAR RESPOSTA (RESPONSE) -->
+      <!-- TELA: RESPONSE -->
       <div id="response-screen" class="game-screen">
         <div id="display-prompt" class="prompt-text-display">...</div>
-        <div class="field" style="max-width: 600px;">
-          <textarea id="response-input" placeholder="Sua resposta criativa..." style="font-size: 1.8rem; min-height: 150px;"></textarea>
-        </div>
-        <button id="submit-response-btn">Enviar Resposta</button>
+        <textarea id="response-input" placeholder="Sua resposta mais criativa aqui..."></textarea>
+        <button id="submit-response-btn" style="margin-top: 2rem;">Enviar Resposta</button>
       </div>
 
-      <!-- TELA: VOTAÇÃO (VOTING) -->
+      <!-- TELA: VOTING -->
       <div id="voting-screen" class="game-screen">
-        <div style="font-size: 1.5rem; margin-bottom: 2rem; color: var(--primary);">Vote na melhor resposta!</div>
-        <div id="voting-list" style="width: 100%; display: flex; flex-direction: column; align-items: center;">
-          <!-- Cartões de voto aqui -->
+        <div style="font-size: 1.5rem; font-weight: 900; color: var(--primary); margin-bottom: 2.5rem; letter-spacing: 1px;">QUEM FOI MAIS CRIATIVO?</div>
+        <div id="voting-list" style="width: 100%; display: flex; flex-direction: column; align-items: center;"></div>
+      </div>
+
+      <!-- TELA: RESULTS -->
+      <div id="results-screen" class="game-screen">
+        <div style="font-size: 2rem; font-weight: 900; color: var(--primary); margin-bottom: 2rem;">PLACAR DA RODADA</div>
+        <div id="results-list" style="width: 100%; display: flex; flex-direction: column; align-items: center;"></div>
+        <div id="results-controls" style="display: none; margin-top: 2rem;">
+          <button id="next-round-btn">Próxima Rodada</button>
         </div>
       </div>
 
-      <!-- TELA: ESPERA (WAITING) -->
+      <!-- TELA: WAITING -->
       <div id="waiting-screen" class="game-screen">
-        <div id="waiting-message" style="font-size: 2.5rem; font-weight: 800; text-align: center;">...</div>
+        <div id="waiting-message" style="font-size: 1.8rem; font-weight: 800; text-align: center; color: var(--primary);">Aguardando...</div>
       </div>
 
-      <!-- STATUS GLOBAL / ERROS -->
-      <div id="status" style="color: #ff4d4d;"></div>
+      <div id="status" style="margin-top: 2rem;"></div>
     </div>
 
     <script type="module" src="/src/main.ts"></script>

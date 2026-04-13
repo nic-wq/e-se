@@ -1,6 +1,3 @@
-/**
- * Estados principais do ciclo de jogo "E se..."
- */
 export enum GameState {
   LOBBY = 'LOBBY',
   PROMPT_PHASE = 'PROMPT_PHASE',     
@@ -10,9 +7,6 @@ export enum GameState {
   GAME_OVER = 'GAME_OVER'            
 }
 
-/**
- * Interface para um jogador
- */
 export interface Player {
   id: string;
   nickname: string;
@@ -21,17 +15,17 @@ export interface Player {
   connected: boolean;
 }
 
-/**
- * Interface para uma resposta anônima que vai para o frontend
- */
 export interface AnonymousResponse {
   id: string;
   text: string;
 }
 
-/**
- * Interface para o estado de uma sala
- */
+export interface RoundResult {
+  authorNickname: string;
+  text: string;
+  voteCount: number;
+}
+
 export interface RoomState {
   code: string;
   state: GameState;
@@ -40,22 +34,16 @@ export interface RoomState {
   maxRounds: number;
   currentPrompt?: string;
   promptCreatorId?: string;
-  responses?: AnonymousResponse[]; // Respostas anônimas para votação
+  responses?: AnonymousResponse[]; 
+  roundResults?: RoundResult[];
 }
 
-/**
- * Estrutura base de uma mensagem WebSocket
- */
 export interface SocketMessage<T = any> {
   type: string;
   payload: T;
 }
 
-/**
- * Tipos de eventos WebSocket
- */
 export enum GameEventType {
-  // Client -> Server
   JOIN_ROOM = 'JOIN_ROOM',
   START_GAME = 'START_GAME',
   SUBMIT_PROMPT = 'SUBMIT_PROMPT',
@@ -63,8 +51,10 @@ export enum GameEventType {
   SUBMIT_VOTE = 'SUBMIT_VOTE',
   KICK_PLAYER = 'KICK_PLAYER',
   RESET_GAME = 'RESET_GAME',
+  NEXT_ROUND = 'NEXT_ROUND',
+  REPORT_PLAYER = 'REPORT_PLAYER',
 
-  // Server -> Client
   ROOM_STATE_UPDATE = 'ROOM_STATE_UPDATE',
-  ERROR = 'ERROR'
+  ERROR = 'ERROR',
+  TOAST = 'TOAST' // Nova notificação temporária
 }
