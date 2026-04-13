@@ -1,0 +1,13 @@
+{
+  "name": "@ese/api",
+  "version": "1.0.0",
+  "module": "src/index.ts",
+  "type": "module",
+  "dependencies": {
+    "@ese/shared": "workspace:*"
+  },
+  "scripts": {
+    "dev": "bun --hot src/index.ts",
+    "start": "bun src/index.ts"
+  }
+}

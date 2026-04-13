@@ -1,0 +1,16 @@
+{
+  "name": "ese",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:api": "bun --cwd apps/api dev",
+    "dev:web": "bun --cwd apps/web dev",
+    "build": "bun --cwd apps/web build"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

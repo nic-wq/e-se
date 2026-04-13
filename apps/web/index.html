@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>E se... - Jogo de Festa</title>
+    <style>
+      :root {
+        --primary: #646cff;
+        --bg: #242424;
+        --text: #ffffff;
+      }
+      body {
+        font-family: system-ui, -apple-system, sans-serif;
+        background-color: var(--bg);
+        color: var(--text);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        margin: 0;
+      }
+      .container {
+        max-width: 400px;
+        width: 90%;
+        padding: 2rem;
+        border-radius: 1rem;
+        background: #1a1a1a;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      }
+      h1 { margin-top: 0; text-align: center; }
+      .field { margin-bottom: 1.5rem; }
+      label { display: block; margin-bottom: 0.5rem; color: #aaa; }
+      input {
+        width: 100%;
+        padding: 0.8rem;
+        border: 1px solid #333;
+        border-radius: 0.5rem;
+        background: #000;
+        color: white;
+        box-sizing: border-box;
+      }
+      button {
+        width: 100%;
+        padding: 1rem;
+        border: none;
+        border-radius: 0.5rem;
+        background-color: var(--primary);
+        color: white;
+        font-weight: bold;
+        cursor: pointer;
+        transition: filter 0.2s;
+      }
+      button:hover { filter: brightness(1.2); }
+      #status { margin-top: 1rem; text-align: center; font-size: 0.9rem; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>E se...</h1>
+      
+      <div id="login-screen">
+        <div class="field">
+          <label>Endereço do Servidor</label>
+          <input type="text" id="server-url" value="ws://localhost:3000" placeholder="ws://..." />
+        </div>
+        
+        <div class="field">
+          <label>Seu Nickname</label>
+          <input type="text" id="nickname" placeholder="Ex: Capivara Radical" />
+        </div>
+
+        <button id="connect-btn">Conectar e Jogar</button>
+        <div id="status"></div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
