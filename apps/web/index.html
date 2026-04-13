@@ -13,10 +13,12 @@
     <div class="background-grid"></div>
     <div id="toast-container"></div>
 
+    <!-- Botão de Denúncia (Fixo Direita) -->
     <div id="report-btn-wrapper" style="display: none;">
       <div class="report-btn" title="Denunciar Anti-Jogo">🚩</div>
     </div>
 
+    <!-- Modal de Denúncia -->
     <div id="report-modal" class="modal">
       <div class="modal-content">
         <h2 style="margin-top:0; color:var(--error);">Denunciar</h2>
@@ -32,7 +34,7 @@
       <!-- TELA: BOAS-VINDAS -->
       <div id="welcome-screen" class="game-screen" style="display: flex;">
         <button id="go-to-login-btn">Conectar ao Servidor</button>
-        <button id="go-to-how-btn" style="background:transparent; border:1px solid var(--secondary);">Como Jogar?</button>
+        <button id="go-to-how-btn" style="background:transparent; border:1px solid var(--secondary); margin-top:1rem;">Como Jogar?</button>
       </div>
 
       <!-- TELA: COMO JOGAR -->
@@ -101,6 +103,17 @@
         <div id="results-list" style="width: 100%; display: flex; flex-direction: column; align-items: center;"></div>
         <div id="results-controls" style="display: none; margin-top: 2rem;">
           <button id="next-round-btn">Próxima Rodada</button>
+        </div>
+      </div>
+
+      <!-- TELA: GAME OVER (NOVA) -->
+      <div id="game-over-screen" class="game-screen">
+        <div style="font-size: 2rem; font-weight: 900; color: var(--success); margin-bottom: 3rem; letter-spacing: 2px;">FIM DE PARTIDA!</div>
+        <div id="podium" class="podium"></div>
+        <div id="final-stats" style="width: 100%; margin-bottom: 3rem;"></div>
+        <div id="game-over-controls" style="width: 100%;">
+          <button id="back-to-lobby-btn" style="display:none;">Jogar Novamente</button>
+          <button id="exit-game-btn" style="background:#222; margin-top:1rem; border:1px solid #333;">Sair para o Início</button>
         </div>
       </div>
 

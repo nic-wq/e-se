@@ -9,6 +9,7 @@ const screens = {
   response: document.getElementById('response-screen')!,
   voting: document.getElementById('voting-screen')!,
   results: document.getElementById('results-screen')!,
+  gameOver: document.getElementById('game-over-screen')!,
   waiting: document.getElementById('waiting-screen')!,
 };
 
@@ -22,6 +23,8 @@ const resetBtn = document.getElementById('reset-btn') as HTMLButtonElement;
 const nextRoundBtn = document.getElementById('next-round-btn') as HTMLButtonElement;
 const submitPromptBtn = document.getElementById('submit-prompt-btn') as HTMLButtonElement;
 const submitResponseBtn = document.getElementById('submit-response-btn') as HTMLButtonElement;
+const backToLobbyBtn = document.getElementById('back-to-lobby-btn') as HTMLButtonElement;
+const exitGameBtn = document.getElementById('exit-game-btn') as HTMLButtonElement;
 
 const nicknameInput = document.getElementById('nickname') as HTMLInputElement;
 const promptInput = document.getElementById('prompt-input') as HTMLTextAreaElement;
@@ -34,6 +37,8 @@ const displayPromptDiv = document.getElementById('display-prompt') as HTMLDivEle
 const hostControls = document.getElementById('host-controls') as HTMLDivElement;
 const resultsControls = document.getElementById('results-controls') as HTMLDivElement;
 const toastContainer = document.getElementById('toast-container') as HTMLDivElement;
+const podiumDiv = document.getElementById('podium') as HTMLDivElement;
+const finalStatsDiv = document.getElementById('final-stats') as HTMLDivElement;
 
 // Report Elements
 const reportBtnWrapper = document.getElementById('report-btn-wrapper') as HTMLDivElement;
@@ -42,7 +47,7 @@ const reportModal = document.getElementById('report-modal') as HTMLDivElement;
 const playerReportList = document.getElementById('player-report-list') as HTMLDivElement;
 const closeModalBtn = document.getElementById('close-modal-btn') as HTMLButtonElement;
 
-// Navigation Buttons
+// Navigation
 const goToLoginBtn = document.getElementById('go-to-login-btn') as HTMLButtonElement;
 const goToHowBtn = document.getElementById('go-to-how-btn') as HTMLButtonElement;
 const backToWelcomeBtn = document.getElementById('back-to-welcome-btn') as HTMLButtonElement;
@@ -54,30 +59,68 @@ let myPlayerId = "";
 let isAdminMode = false;
 let lastRoomState: RoomState | null = null;
 
-// --- SOUND MANAGER ---
+// --- SOUNDS (ALERES E ALTOS) ---
 const AudioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+
 function playSound(type: 'click' | 'success' | 'phase' | 'warning') {
   if (AudioCtx.state === 'suspended') AudioCtx.resume();
   const osc = AudioCtx.createOscillator();
   const gain = AudioCtx.createGain();
-  osc.connect(gain); gain.connect(AudioCtx.destination);
+  
+  osc.connect(gain);
+  gain.connect(AudioCtx.destination);
+  
   const now = AudioCtx.currentTime;
+
   switch(type) {
     case 'click':
-      osc.frequency.setValueAtTime(800, now); osc.frequency.exponentialRampToValueAtTime(100, now + 0.1);
-      gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now + 0.1);
-      osc.start(now); osc.stop(now + 0.1); break;
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(600, now);
+      osc.frequency.exponentialRampToValueAtTime(1200, now + 0.05);
+      gain.gain.setValueAtTime(0.3, now);
+      gain.gain.linearRampToValueAtTime(0, now + 0.1);
+      osc.start(now); osc.stop(now + 0.1);
+      break;
     case 'success':
-      [440, 554, 659].forEach((f, i) => { osc.frequency.setValueAtTime(f, now + i * 0.1); });
-      gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
-      osc.start(now); osc.stop(now + 0.4); break;
+      osc.type = 'sine';
+      // Melodia alegre (C E G C)
+      [523.25, 659.25, 783.99, 1046.50].forEach((f, i) => {
+        const t = now + i * 0.1;
+        osc.frequency.setValueAtTime(f, t);
+      });
+      gain.gain.setValueAtTime(0.3, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+      osc.start(now); osc.stop(now + 0.6);
+      break;
     case 'phase':
-      osc.frequency.setValueAtTime(200, now); osc.frequency.linearRampToValueAtTime(400, now + 0.2);
-      gain.gain.setValueAtTime(0.05, now); gain.gain.linearRampToValueAtTime(0, now + 0.2);
-      osc.start(now); osc.stop(now + 0.2); break;
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(300, now);
+      osc.frequency.exponentialRampToValueAtTime(600, now + 0.1);
+      gain.gain.setValueAtTime(0.15, now);
+      gain.gain.linearRampToValueAtTime(0, now + 0.2);
+      osc.start(now); osc.stop(now + 0.2);
+      break;
     case 'warning':
-      osc.frequency.setValueAtTime(150, now); gain.gain.setValueAtTime(0.1, now);
-      gain.gain.linearRampToValueAtTime(0, now + 0.3); osc.start(now); osc.stop(now + 0.3); break;
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(200, now);
+      osc.frequency.linearRampToValueAtTime(100, now + 0.2);
+      gain.gain.setValueAtTime(0.2, now);
+      gain.gain.linearRampToValueAtTime(0, now + 0.3);
+      osc.start(now); osc.stop(now + 0.3);
+      break;
+  }
+}
+
+// --- CONFETTI ---
+function spawnConfetti() {
+  for (let i = 0; i < 60; i++) {
+    const confetti = document.createElement('div');
+    confetti.className = 'confetti';
+    confetti.style.left = Math.random() * 100 + 'vw';
+    confetti.style.backgroundColor = `hsl(${Math.random() * 360}, 80%, 60%)`;
+    confetti.style.animationDelay = Math.random() * 2 + 's';
+    document.body.appendChild(confetti);
+    setTimeout(() => confetti.remove(), 5000);
   }
 }
 
@@ -95,8 +138,9 @@ function showToast(message: string, type: 'error' | 'success' | 'warning' = 'err
 function showScreen(screen: HTMLElement) {
   Object.values(screens).forEach(s => s.style.display = 'none');
   screen.style.display = 'flex';
-  const noReportScreens = [screens.welcome, screens.howToPlay, screens.login];
-  reportBtnWrapper.style.display = noReportScreens.includes(screen) ? 'none' : 'block';
+  const hideReport = [screens.welcome, screens.howToPlay, screens.login, screens.gameOver];
+  reportBtnWrapper.style.display = hideReport.includes(screen) ? 'none' : 'block';
+  reportModal.style.display = 'none';
 }
 
 function updateUI(room: RoomState) {
@@ -105,11 +149,8 @@ function updateUI(room: RoomState) {
 
   if (lastRoomState?.state !== room.state) {
     playSound('phase');
-    if (room.state === GameState.PROMPT_PHASE) showToast("A partida começou!", "success");
-    if (room.state === GameState.VOTING_PHASE) showToast("Hora de votar!", "warning");
-    if (room.state === GameState.RESULTS_PHASE) { showToast("Rodada finalizada!", "success"); playSound('success'); }
+    if (room.state === GameState.GAME_OVER) { playSound('success'); spawnConfetti(); }
   }
-  
   lastRoomState = room;
 
   switch (room.state) {
@@ -149,23 +190,21 @@ function updateUI(room: RoomState) {
     case GameState.VOTING_PHASE:
       showScreen(screens.voting);
       votingListDiv.innerHTML = '';
-      const canVote = room.responses?.some(res => res.id !== myPlayerId);
-      if (!canVote) {
+      const choices = room.responses?.filter(res => res.id !== myPlayerId);
+      if (!choices || choices.length === 0) {
         showScreen(screens.waiting);
-        document.getElementById('waiting-message')!.innerText = `Aguardando votos dos outros...`;
+        document.getElementById('waiting-message')!.innerText = `Aguardando votos...`;
       } else {
-        room.responses?.forEach((res: AnonymousResponse) => {
-          if (res.id === myPlayerId) return;
-          const card = document.createElement('div');
-          card.className = 'vote-card';
-          card.innerText = res.text;
-          card.onclick = () => {
-            playSound('click');
-            socket?.send(JSON.stringify({ type: GameEventType.SUBMIT_VOTE, payload: { responseId: res.id } }));
-            showScreen(screens.waiting);
-            document.getElementById('waiting-message')!.innerText = `Voto enviado!`;
+        choices.forEach((res: AnonymousResponse) => {
+          const btn = document.createElement('button');
+          btn.className = 'vote-card';
+          btn.innerText = res.text;
+          btn.onclick = () => { 
+            playSound('click'); 
+            socket?.send(JSON.stringify({ type: GameEventType.SUBMIT_VOTE, payload: { responseId: res.id } })); 
+            showScreen(screens.waiting); 
           };
-          votingListDiv.appendChild(card);
+          votingListDiv.appendChild(btn);
         });
       }
       break;
@@ -178,7 +217,7 @@ function updateUI(room: RoomState) {
         card.className = 'result-card';
         card.innerHTML = `
           <div style="text-align: left;">
-            <div style="font-size:0.7rem; opacity:0.5; text-transform:uppercase; font-weight:800;">${res.authorNickname}</div>
+            <div style="font-size:0.7rem; opacity:0.5; text-transform:uppercase;">${res.authorNickname}</div>
             <div style="font-size:1.1rem; font-weight:800;">${res.text}</div>
           </div>
           <div class="score-badge">+${res.voteCount * 10}</div>
@@ -189,19 +228,40 @@ function updateUI(room: RoomState) {
       break;
 
     case GameState.GAME_OVER:
-      showScreen(screens.waiting);
-      document.getElementById('waiting-message')!.innerText = `Fim de Jogo!`;
+      showScreen(screens.gameOver);
+      const sorted = [...room.players].sort((a, b) => b.score - a.score);
+      podiumDiv.innerHTML = '';
+      [1, 0, 2].forEach(idx => {
+        const p = sorted[idx];
+        if (!p) return;
+        const place = document.createElement('div');
+        place.className = `podium-place podium-${idx + 1}`;
+        place.innerHTML = `
+          <div class="podium-crown">${idx === 0 ? '👑' : idx === 1 ? '🥈' : '🥉'}</div>
+          <div class="podium-name">${p.nickname}</div>
+          <div class="podium-score">${p.score} pts</div>
+        `;
+        podiumDiv.appendChild(place);
+      });
+      finalStatsDiv.innerHTML = sorted.slice(3).map(p => `
+        <div class="result-card" style="border-left:none; background:rgba(255,255,255,0.02)">
+          <span>${p.nickname}</span>
+          <span style="opacity:0.5">${p.score} pts</span>
+        </div>
+      `).join('');
+      backToLobbyBtn.style.display = isMeHost ? 'block' : 'none';
       break;
   }
 }
 
-// --- NAVIGATION ---
+// --- NAV & ACTIONS ---
 goToLoginBtn.onclick = () => { playSound('click'); showScreen(screens.login); };
 goToHowBtn.onclick = () => { playSound('click'); showScreen(screens.howToPlay); };
 backToWelcomeBtn.onclick = () => { playSound('click'); showScreen(screens.welcome); };
 backFromLoginBtn.onclick = () => { playSound('click'); showScreen(screens.welcome); };
+exitGameBtn.onclick = () => { playSound('click'); socket?.close(); showScreen(screens.welcome); };
+backToLobbyBtn.onclick = () => { playSound('click'); socket?.send(JSON.stringify({ type: GameEventType.RESET_GAME, payload: {} })); };
 
-// --- ACTIONS ---
 reportBtn.onclick = () => {
   playSound('click');
   if (!lastRoomState) return;
@@ -211,11 +271,7 @@ reportBtn.onclick = () => {
     const item = document.createElement('div');
     item.className = 'report-item';
     item.innerText = p.nickname;
-    item.onclick = () => {
-      playSound('warning');
-      socket?.send(JSON.stringify({ type: GameEventType.REPORT_PLAYER, payload: { playerId: p.id } }));
-      reportModal.style.display = 'none';
-    };
+    item.onclick = () => { socket?.send(JSON.stringify({ type: GameEventType.REPORT_PLAYER, payload: { playerId: p.id } })); reportModal.style.display = 'none'; };
     playerReportList.appendChild(item);
   });
   reportModal.style.display = 'flex';
@@ -246,21 +302,19 @@ connectBtn.onclick = () => {
     if (data.type === GameEventType.ROOM_STATE_UPDATE) updateUI(data.payload);
     if (data.type === GameEventType.TOAST) showToast(data.payload.message, data.payload.type);
   };
-  socket.onclose = () => { showScreen(screens.welcome); showToast("Conexão perdida.", "error"); };
+  socket.onclose = () => { showScreen(screens.welcome); showToast("Conexão encerrada.", "error"); };
 };
 
-startBtn.onclick = () => socket?.send(JSON.stringify({ type: GameEventType.START_GAME, payload: {} }));
-resetBtn.onclick = () => socket?.send(JSON.stringify({ type: GameEventType.RESET_GAME, payload: {} }));
-nextRoundBtn.onclick = () => socket?.send(JSON.stringify({ type: GameEventType.NEXT_ROUND, payload: {} }));
+startBtn.onclick = () => { playSound('click'); socket?.send(JSON.stringify({ type: GameEventType.START_GAME, payload: {} })); };
+resetBtn.onclick = () => { playSound('click'); socket?.send(JSON.stringify({ type: GameEventType.RESET_GAME, payload: {} })); };
+nextRoundBtn.onclick = () => { playSound('click'); socket?.send(JSON.stringify({ type: GameEventType.NEXT_ROUND, payload: {} })); };
 submitPromptBtn.onclick = () => {
+  playSound('click');
   const prompt = promptInput.value.trim();
-  if (!prompt) return showToast("Escreva algo!");
-  socket?.send(JSON.stringify({ type: GameEventType.SUBMIT_PROMPT, payload: { prompt } }));
+  if (prompt) socket?.send(JSON.stringify({ type: GameEventType.SUBMIT_PROMPT, payload: { prompt } }));
 };
 submitResponseBtn.onclick = () => {
+  playSound('click');
   const response = responseInput.value.trim();
-  if (!response) return showToast("Escreva algo!");
-  socket?.send(JSON.stringify({ type: GameEventType.SUBMIT_RESPONSE, payload: { response } }));
-  showScreen(screens.waiting);
-  document.getElementById('waiting-message')!.innerText = `Resposta enviada!`;
+  if (response) socket?.send(JSON.stringify({ type: GameEventType.SUBMIT_RESPONSE, payload: { response } }));
 };
