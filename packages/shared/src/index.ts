@@ -3,11 +3,11 @@
  */
 export enum GameState {
   LOBBY = 'LOBBY',
-  PROMPT_PHASE = 'PROMPT_PHASE',     // Alguém cria a ocasião
-  RESPONSE_PHASE = 'RESPONSE_PHASE', // Outros enviam respostas
-  VOTING_PHASE = 'VOTING_PHASE',     // Todos votam
-  RESULTS_PHASE = 'RESULTS_PHASE',   // Revelação e Placar
-  GAME_OVER = 'GAME_OVER'            // Fim de jogo
+  PROMPT_PHASE = 'PROMPT_PHASE',     
+  RESPONSE_PHASE = 'RESPONSE_PHASE', 
+  VOTING_PHASE = 'VOTING_PHASE',     
+  RESULTS_PHASE = 'RESULTS_PHASE',   
+  GAME_OVER = 'GAME_OVER'            
 }
 
 /**
@@ -22,6 +22,14 @@ export interface Player {
 }
 
 /**
+ * Interface para uma resposta anônima que vai para o frontend
+ */
+export interface AnonymousResponse {
+  id: string;
+  text: string;
+}
+
+/**
  * Interface para o estado de uma sala
  */
 export interface RoomState {
@@ -32,6 +40,7 @@ export interface RoomState {
   maxRounds: number;
   currentPrompt?: string;
   promptCreatorId?: string;
+  responses?: AnonymousResponse[]; // Respostas anônimas para votação
 }
 
 /**
@@ -43,7 +52,7 @@ export interface SocketMessage<T = any> {
 }
 
 /**
- * Tipos de eventos WebSocket (Client -> Server e Server -> Client)
+ * Tipos de eventos WebSocket
  */
 export enum GameEventType {
   // Client -> Server
@@ -52,6 +61,8 @@ export enum GameEventType {
   SUBMIT_PROMPT = 'SUBMIT_PROMPT',
   SUBMIT_RESPONSE = 'SUBMIT_RESPONSE',
   SUBMIT_VOTE = 'SUBMIT_VOTE',
+  KICK_PLAYER = 'KICK_PLAYER',
+  RESET_GAME = 'RESET_GAME',
 
   // Server -> Client
   ROOM_STATE_UPDATE = 'ROOM_STATE_UPDATE',
