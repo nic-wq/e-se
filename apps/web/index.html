@@ -7,46 +7,65 @@
     <link rel="stylesheet" href="/src/style.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
   </head>
   <body>
     <div class="background-grid"></div>
 
     <div class="container">
-      <h1>E se...</h1>
+      <!-- Título que pode diminuir em certas fases -->
+      <h1 id="game-title">E se...</h1>
       
-      <div id="game-ui">
-        <!-- Tela de Login -->
-        <div id="login-screen">
-          <div class="field">
-            <label>Endereço do Servidor</label>
-            <input type="text" id="server-url" value="ws://localhost:3000" />
-          </div>
-          
-          <div class="field">
-            <label>Escolha seu Nickname</label>
-            <input type="text" id="nickname" placeholder="Ex: Capivara Gamer" maxlength="15" />
-          </div>
-
-          <button id="connect-btn">Entrar no Jogo</button>
+      <!-- TELA: LOGIN -->
+      <div id="login-screen" class="game-screen" style="display: flex;">
+        <div class="field">
+          <label>Servidor</label>
+          <input type="text" id="server-url" value="ws://localhost:3000" />
         </div>
-
-        <!-- Lobby (Aparece após conectar) -->
-        <div id="lobby-screen" style="display: none;">
-          <div id="room-info" style="text-align: center; margin-bottom: 1rem; color: var(--primary);">
-            Aguardando Jogadores...
-          </div>
-          <div class="player-list" id="player-list">
-            <!-- Jogadores entram aqui -->
-          </div>
-          <div id="host-controls" style="margin-top: 2rem; display: none;">
-            <button id="start-btn">Começar Partida</button>
-          </div>
+        <div class="field">
+          <label>Seu Nickname</label>
+          <input type="text" id="nickname" placeholder="Nickname" maxlength="15" />
         </div>
-
-        <!-- Status / Mensagens -->
-        <div id="status"></div>
+        <div class="field" id="admin-field" style="display: none;">
+          <label>Senha do Admin</label>
+          <input type="password" id="admin-password" placeholder="••••••" />
+        </div>
+        <button id="connect-btn">Entrar como Jogador</button>
+        <button id="admin-mode-btn" style="background: transparent; border: 1px solid var(--primary); margin-top: 1rem; font-size: 0.9rem; padding: 0.8rem;">Entrar como Admin</button>
       </div>
+
+      <!-- TELA: LOBBY -->
+      <div id="lobby-screen" class="game-screen">
+        <div id="room-info" style="font-size: 1.5rem; margin-bottom: 2rem; color: #888;">Aguardando...</div>
+        <div class="player-list" id="player-list"></div>
+        <div id="host-controls" style="margin-top: 4rem; display: none;">
+          <button id="start-btn">Começar Partida</button>
+        </div>
+      </div>
+
+      <!-- TELA: CRIAR OCASIÃO (PROMPT) -->
+      <div id="prompt-screen" class="game-screen">
+        <div id="prompt-instruction" style="font-size: 1.5rem; margin-bottom: 2rem;">Você é o mestre! Crie uma ocasião...</div>
+        <textarea id="prompt-input" placeholder="E se..."></textarea>
+        <button id="submit-prompt-btn" style="margin-top: 2rem;">Enviar Ocasião</button>
+      </div>
+
+      <!-- TELA: ENVIAR RESPOSTA (RESPONSE) -->
+      <div id="response-screen" class="game-screen">
+        <div id="display-prompt" class="prompt-text-display">E se... as capivaras dominassem o mundo?</div>
+        <div class="field" style="max-width: 600px;">
+          <textarea id="response-input" placeholder="Sua resposta criativa..." style="font-size: 1.8rem; min-height: 150px;"></textarea>
+        </div>
+        <button id="submit-response-btn">Enviar Resposta</button>
+      </div>
+
+      <!-- TELA: ESPERA (WAITING) -->
+      <div id="waiting-screen" class="game-screen">
+        <div id="waiting-message" style="font-size: 2.5rem; font-weight: 800; text-align: center;">Aguardando os outros jogadores...</div>
+      </div>
+
+      <!-- STATUS GLOBAL -->
+      <div id="status"></div>
     </div>
 
     <script type="module" src="/src/main.ts"></script>

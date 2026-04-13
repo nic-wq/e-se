@@ -2,9 +2,18 @@ import { GameEventType, GameState, type Player, type RoomState, type SocketMessa
 import { randomUUID } from "crypto";
 import type { ServerWebSocket } from "bun";
 
-type GameSocket = ServerWebSocket<{ nickname: string, playerId: string }>;
+type GameSocket = ServerWebSocket<{ nickname: string, playerId: string, isHost: boolean }>;
 
-// Estado global da sala única desta instância
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin123";
+
+interface RoundResponse {
+  playerId: string;
+  text: string;
+  votes: string[];
+}
+
+let responses: RoundResponse[] = [];
+
 const globalRoom: RoomState = {
   code: "GLOBAL",
   state: GameState.LOBBY,
@@ -13,7 +22,6 @@ const globalRoom: RoomState = {
   maxRounds: 5,
 };
 
-// Sockets conectados nesta sala
 const connectedSockets: Set<GameSocket> = new Set();
 
 const broadcastState = () => {
@@ -26,23 +34,27 @@ const broadcastState = () => {
   }
 };
 
-const server = Bun.serve<{ nickname: string, playerId: string }>({
+const server = Bun.serve<{ nickname: string, playerId: string, isHost: boolean }>({
   port: process.env.PORT || 3000,
   fetch(req, server) {
     const success = server.upgrade(req, {
       data: {
         nickname: "",
         playerId: randomUUID(),
+        isHost: false,
       }
     });
     if (success) return undefined;
-    
     return new Response("Servidor 'E se...' em execução!");
   },
   websocket: {
     open(ws: GameSocket) {
       connectedSockets.add(ws);
-      console.log(`🟢 Conexão aberta (${ws.data.playerId})`);
+      // Enviamos o ID gerado para o cliente logo na conexão
+      ws.send(JSON.stringify({
+        type: "INITIAL_ID",
+        payload: { playerId: ws.data.playerId }
+      }));
     },
     message(ws: GameSocket, message) {
       try {
@@ -50,57 +62,76 @@ const server = Bun.serve<{ nickname: string, playerId: string }>({
         
         switch (data.type) {
           case GameEventType.JOIN_ROOM:
-            const { nickname } = data.payload;
+            const { nickname, adminPassword } = data.payload;
             ws.data.nickname = nickname;
+            
+            // Define se é host baseado na senha ou se é o primeiro (se ninguém for host ainda)
+            const hasHost = globalRoom.players.some(p => p.isHost);
+            const isAdmin = adminPassword === ADMIN_PASSWORD;
+            ws.data.isHost = isAdmin || (!hasHost && globalRoom.players.length === 0);
 
-            // Se for o primeiro, é host
-            const isHost = globalRoom.players.length === 0;
             const player: Player = {
               id: ws.data.playerId,
               nickname,
               score: 0,
-              isHost,
+              isHost: ws.data.isHost,
               connected: true,
             };
-
+            
             globalRoom.players.push(player);
-            console.log(`👤 ${nickname} entrou no jogo (Host: ${isHost})`);
+            console.log(`👤 ${nickname} entrou (Host: ${player.isHost})`);
             broadcastState();
             break;
             
           case GameEventType.START_GAME:
-            // Apenas host inicia se houver 2+ jogadores
-            const me = globalRoom.players.find(p => p.id === ws.data.playerId);
-            if (me?.isHost && globalRoom.players.length >= 2) {
+            if (ws.data.isHost && globalRoom.players.length >= 2) {
               globalRoom.state = GameState.PROMPT_PHASE;
               globalRoom.currentRound = 1;
               const creator = globalRoom.players[Math.floor(Math.random() * globalRoom.players.length)];
               globalRoom.promptCreatorId = creator.id;
-              
-              console.log(`🎮 Jogo iniciado! Criador: ${creator.nickname}`);
+              responses = [];
               broadcastState();
             }
             break;
 
-          default:
-            console.log(`📩 Evento não tratado: ${data.type}`);
+          case GameEventType.SUBMIT_PROMPT:
+            if (globalRoom.state === GameState.PROMPT_PHASE && ws.data.playerId === globalRoom.promptCreatorId) {
+              globalRoom.currentPrompt = data.payload.prompt;
+              globalRoom.state = GameState.RESPONSE_PHASE;
+              responses = [];
+              broadcastState();
+            }
+            break;
+
+          case GameEventType.SUBMIT_RESPONSE:
+            if (globalRoom.state === GameState.RESPONSE_PHASE) {
+              if (!responses.some(r => r.playerId === ws.data.playerId)) {
+                responses.push({ playerId: ws.data.playerId, text: data.payload.response, votes: [] });
+                const totalExpected = globalRoom.players.length - 1;
+                if (responses.length >= totalExpected) {
+                  globalRoom.state = GameState.VOTING_PHASE;
+                }
+                broadcastState();
+              }
+            }
+            break;
         }
       } catch (err) {
-        console.error("❌ Erro ao processar mensagem:", err);
+        console.error("❌ Erro:", err);
       }
     },
     close(ws: GameSocket) {
       connectedSockets.delete(ws);
       globalRoom.players = globalRoom.players.filter(p => p.id !== ws.data.playerId);
-      
-      if (globalRoom.players.length > 0 && !globalRoom.players.some(p => p.isHost)) {
+      // Se o host sair, o primeiro admin ou o primeiro da lista vira host
+      if (ws.data.isHost && globalRoom.players.length > 0) {
         globalRoom.players[0].isHost = true;
+        // Precisamos atualizar o ws.data.isHost do socket correspondente se quisermos ser rigorosos,
+        // mas o broadcastState() já informa o frontend sobre o novo host.
       }
-      
-      console.log(`🏃 ${ws.data.nickname || 'Anônimo'} saiu`);
       broadcastState();
     },
   },
 });
 
-console.log(`🚀 Servidor rodando em: ${server.hostname}:${server.port}`);
+console.log(`🚀 Servidor rodando com senha de admin configurada.`);
