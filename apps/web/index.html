@@ -11,79 +11,93 @@
   </head>
   <body>
     <div class="background-grid"></div>
-
-    <!-- Notificações -->
     <div id="toast-container"></div>
 
-    <!-- Botão de Denúncia -->
     <div id="report-btn-wrapper" style="display: none;">
       <div class="report-btn" title="Denunciar Anti-Jogo">🚩</div>
     </div>
 
-    <!-- Modal de Denúncia -->
     <div id="report-modal" class="modal">
       <div class="modal-content">
-        <h2 style="margin-top:0; color:var(--error);">Denunciar Anti-Jogo</h2>
-        <p style="font-size:0.9rem; color:#888;">Selecione quem está estragando a diversão. (3 denúncias = Expulsão)</p>
+        <h2 style="margin-top:0; color:var(--error);">Denunciar</h2>
+        <p style="font-size:0.85rem; color:#666; margin-bottom:1.5rem;">Escolha quem está atrapalhando.</p>
         <div id="player-report-list" class="player-list-report"></div>
-        <button id="close-modal-btn" style="background:transparent; border:1px solid #333; margin-top:1rem; padding:0.8rem;">Fechar</button>
+        <button id="close-modal-btn" style="background:transparent; border:1px solid #333; margin-top:1rem;">Cancelar</button>
       </div>
     </div>
 
     <div class="container">
       <h1 id="game-title">E se...</h1>
       
+      <!-- TELA: BOAS-VINDAS -->
+      <div id="welcome-screen" class="game-screen" style="display: flex;">
+        <button id="go-to-login-btn">Conectar ao Servidor</button>
+        <button id="go-to-how-btn" style="background:transparent; border:1px solid var(--secondary);">Como Jogar?</button>
+      </div>
+
+      <!-- TELA: COMO JOGAR -->
+      <div id="how-to-play-screen" class="game-screen">
+        <div class="how-to-play-text">
+          <div class="instruction-step"><b>1. O Mestre:</b> Um jogador cria uma ocasião hipotética começando com "E se...".</div>
+          <div class="instruction-step"><b>2. Respostas:</b> Todos os outros enviam respostas criativas e anônimas.</div>
+          <div class="instruction-step"><b>3. Votação:</b> Todos votam na melhor (você não pode votar em si mesmo!).</div>
+          <div class="instruction-step"><b>4. Pontuação:</b> Quem recebe votos ganha pontos. Quem tiver mais no fim vence!</div>
+        </div>
+        <button id="back-to-welcome-btn">Entendi!</button>
+      </div>
+
       <!-- TELA: LOGIN -->
-      <div id="login-screen" class="game-screen" style="display: flex;">
+      <div id="login-screen" class="game-screen">
         <div class="field">
           <label>Endereço do Servidor</label>
           <input type="text" id="server-url" value="ws://localhost:3000" />
         </div>
         <div class="field">
-          <label>Como quer ser chamado?</label>
-          <input type="text" id="nickname" placeholder="Seu Nickname" maxlength="15" />
+          <label>Seu Apelido</label>
+          <input type="text" id="nickname" placeholder="Ex: Capivara Gamer" maxlength="15" />
         </div>
         <div class="field" id="admin-field" style="display: none;">
-          <label>Chave de Admin</label>
+          <label>Senha Admin</label>
           <input type="password" id="admin-password" placeholder="••••••" />
         </div>
         <button id="connect-btn">Entrar na Sala</button>
-        <button id="admin-mode-btn" style="background: transparent; border: 1px solid var(--primary); margin-top: 1.5rem; font-size: 0.8rem; padding: 0.8rem;">Entrar como Admin</button>
+        <button id="admin-mode-btn" style="background:transparent; border:1px solid var(--primary); font-size:0.8rem; margin-top:1rem;">Modo Admin</button>
+        <button id="back-from-login-btn" style="background:transparent; color:#666; margin-top:1rem; font-size:0.8rem;">Voltar</button>
       </div>
 
       <!-- TELA: LOBBY -->
       <div id="lobby-screen" class="game-screen">
-        <div id="room-info" style="font-size: 1.2rem; margin-bottom: 2.5rem; color: var(--primary); letter-spacing: 2px;">AGUARDANDO JOGADORES</div>
+        <div id="room-info" style="font-size: 1rem; color: var(--primary); letter-spacing: 2px; margin-bottom: 2rem;">LOBBY</div>
         <div class="player-list" id="player-list"></div>
-        <div id="host-controls" style="margin-top: 4rem; display: none;">
-          <button id="start-btn">Começar Partida</button>
-          <button id="reset-btn" style="background: #222; margin-top: 1rem; border: 1px solid #444;">Resetar Jogo</button>
+        <div id="host-controls" style="margin-top: 3rem; display: none;">
+          <button id="start-btn">Começar Jogo</button>
+          <button id="reset-btn" style="background:#222; margin-top:1rem; border:1px solid #333;">Resetar Tudo</button>
         </div>
       </div>
 
       <!-- TELA: PROMPT -->
       <div id="prompt-screen" class="game-screen">
-        <div style="font-size: 1.2rem; margin-bottom: 2rem; color: var(--primary); font-weight: 800; text-transform: uppercase;">Você é o Mestre!</div>
+        <label>Crie o cenário perfeito</label>
         <textarea id="prompt-input" placeholder="E se..."></textarea>
-        <button id="submit-prompt-btn" style="margin-top: 2rem;">Lançar Ocasião</button>
+        <button id="submit-prompt-btn" style="margin-top: 2rem;">Enviar ao Grupo</button>
       </div>
 
       <!-- TELA: RESPONSE -->
       <div id="response-screen" class="game-screen">
         <div id="display-prompt" class="prompt-text-display">...</div>
-        <textarea id="response-input" placeholder="Sua resposta mais criativa aqui..."></textarea>
+        <textarea id="response-input" placeholder="Sua resposta genial..."></textarea>
         <button id="submit-response-btn" style="margin-top: 2rem;">Enviar Resposta</button>
       </div>
 
       <!-- TELA: VOTING -->
       <div id="voting-screen" class="game-screen">
-        <div style="font-size: 1.5rem; font-weight: 900; color: var(--primary); margin-bottom: 2.5rem; letter-spacing: 1px;">QUEM FOI MAIS CRIATIVO?</div>
+        <div style="font-size: 1.2rem; font-weight: 800; color: var(--primary); margin-bottom: 2rem;">VOTAÇÃO</div>
         <div id="voting-list" style="width: 100%; display: flex; flex-direction: column; align-items: center;"></div>
       </div>
 
       <!-- TELA: RESULTS -->
       <div id="results-screen" class="game-screen">
-        <div style="font-size: 2rem; font-weight: 900; color: var(--primary); margin-bottom: 2rem;">PLACAR DA RODADA</div>
+        <div style="font-size: 1.5rem; font-weight: 900; color: var(--primary); margin-bottom: 2rem;">RANKING DA RODADA</div>
         <div id="results-list" style="width: 100%; display: flex; flex-direction: column; align-items: center;"></div>
         <div id="results-controls" style="display: none; margin-top: 2rem;">
           <button id="next-round-btn">Próxima Rodada</button>
@@ -92,10 +106,8 @@
 
       <!-- TELA: WAITING -->
       <div id="waiting-screen" class="game-screen">
-        <div id="waiting-message" style="font-size: 1.8rem; font-weight: 800; text-align: center; color: var(--primary);">Aguardando...</div>
+        <div id="waiting-message" class="pulse" style="font-size: 1.5rem; font-weight: 800; text-align: center; color: var(--primary);">Aguardando...</div>
       </div>
-
-      <div id="status" style="margin-top: 2rem;"></div>
     </div>
 
     <script type="module" src="/src/main.ts"></script>

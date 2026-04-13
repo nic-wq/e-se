@@ -1,6 +1,8 @@
 import { GameEventType, type RoomState, type Player, GameState, type AnonymousResponse, type RoundResult } from "@ese/shared";
 
 const screens = {
+  welcome: document.getElementById('welcome-screen')!,
+  howToPlay: document.getElementById('how-to-play-screen')!,
   login: document.getElementById('login-screen')!,
   lobby: document.getElementById('lobby-screen')!,
   prompt: document.getElementById('prompt-screen')!,
@@ -40,58 +42,42 @@ const reportModal = document.getElementById('report-modal') as HTMLDivElement;
 const playerReportList = document.getElementById('player-report-list') as HTMLDivElement;
 const closeModalBtn = document.getElementById('close-modal-btn') as HTMLButtonElement;
 
+// Navigation Buttons
+const goToLoginBtn = document.getElementById('go-to-login-btn') as HTMLButtonElement;
+const goToHowBtn = document.getElementById('go-to-how-btn') as HTMLButtonElement;
+const backToWelcomeBtn = document.getElementById('back-to-welcome-btn') as HTMLButtonElement;
+const backFromLoginBtn = document.getElementById('back-from-login-btn') as HTMLButtonElement;
+
 let socket: WebSocket | null = null;
 let myNickname = "";
 let myPlayerId = "";
 let isAdminMode = false;
 let lastRoomState: RoomState | null = null;
 
-// --- SOUND MANAGER (Web Audio API) ---
+// --- SOUND MANAGER ---
 const AudioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-
 function playSound(type: 'click' | 'success' | 'phase' | 'warning') {
   if (AudioCtx.state === 'suspended') AudioCtx.resume();
   const osc = AudioCtx.createOscillator();
   const gain = AudioCtx.createGain();
-  
-  osc.connect(gain);
-  gain.connect(AudioCtx.destination);
-  
+  osc.connect(gain); gain.connect(AudioCtx.destination);
   const now = AudioCtx.currentTime;
-
   switch(type) {
     case 'click':
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(800, now);
-      osc.frequency.exponentialRampToValueAtTime(100, now + 0.1);
-      gain.gain.setValueAtTime(0.1, now);
-      gain.gain.linearRampToValueAtTime(0, now + 0.1);
-      osc.start(now); osc.stop(now + 0.1);
-      break;
+      osc.frequency.setValueAtTime(800, now); osc.frequency.exponentialRampToValueAtTime(100, now + 0.1);
+      gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now + 0.1);
+      osc.start(now); osc.stop(now + 0.1); break;
     case 'success':
-      osc.type = 'triangle';
-      [440, 554, 659, 880].forEach((f, i) => {
-        osc.frequency.setValueAtTime(f, now + i * 0.1);
-      });
-      gain.gain.setValueAtTime(0.1, now);
-      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
-      osc.start(now); osc.stop(now + 0.4);
-      break;
+      [440, 554, 659].forEach((f, i) => { osc.frequency.setValueAtTime(f, now + i * 0.1); });
+      gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+      osc.start(now); osc.stop(now + 0.4); break;
     case 'phase':
-      osc.type = 'square';
-      osc.frequency.setValueAtTime(200, now);
-      osc.frequency.linearRampToValueAtTime(400, now + 0.2);
-      gain.gain.setValueAtTime(0.05, now);
-      gain.gain.linearRampToValueAtTime(0, now + 0.2);
-      osc.start(now); osc.stop(now + 0.2);
-      break;
+      osc.frequency.setValueAtTime(200, now); osc.frequency.linearRampToValueAtTime(400, now + 0.2);
+      gain.gain.setValueAtTime(0.05, now); gain.gain.linearRampToValueAtTime(0, now + 0.2);
+      osc.start(now); osc.stop(now + 0.2); break;
     case 'warning':
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(150, now);
-      gain.gain.setValueAtTime(0.1, now);
-      gain.gain.linearRampToValueAtTime(0, now + 0.3);
-      osc.start(now); osc.stop(now + 0.3);
-      break;
+      osc.frequency.setValueAtTime(150, now); gain.gain.setValueAtTime(0.1, now);
+      gain.gain.linearRampToValueAtTime(0, now + 0.3); osc.start(now); osc.stop(now + 0.3); break;
   }
 }
 
@@ -101,21 +87,16 @@ function showToast(message: string, type: 'error' | 'success' | 'warning' = 'err
   toast.className = `toast ${type}`;
   toast.innerText = message;
   toastContainer.appendChild(toast);
-  
   if (type === 'error' || type === 'warning') playSound('warning');
   else playSound('click');
-
-  setTimeout(() => {
-    toast.style.opacity = '0';
-    toast.style.transform = 'translateX(50px)';
-    setTimeout(() => toast.remove(), 400);
-  }, 4000);
+  setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateX(50px)'; setTimeout(() => toast.remove(), 400); }, 4000);
 }
 
 function showScreen(screen: HTMLElement) {
   Object.values(screens).forEach(s => s.style.display = 'none');
   screen.style.display = 'flex';
-  reportBtnWrapper.style.display = (screen === screens.login) ? 'none' : 'block';
+  const noReportScreens = [screens.welcome, screens.howToPlay, screens.login];
+  reportBtnWrapper.style.display = noReportScreens.includes(screen) ? 'none' : 'block';
 }
 
 function updateUI(room: RoomState) {
@@ -151,7 +132,7 @@ function updateUI(room: RoomState) {
       } else {
         showScreen(screens.waiting);
         const creator = room.players.find(p => p.id === room.promptCreatorId);
-        document.getElementById('waiting-message')!.innerHTML = `<span class="pulse">${creator?.nickname || 'Mestre'} está criando a ocasião...</span>`;
+        document.getElementById('waiting-message')!.innerText = `${creator?.nickname || 'Mestre'} está criando a ocasião...`;
       }
       break;
 
@@ -159,7 +140,7 @@ function updateUI(room: RoomState) {
       displayPromptDiv.innerText = room.currentPrompt || "";
       if (room.promptCreatorId === myPlayerId) {
         showScreen(screens.waiting);
-        document.getElementById('waiting-message')!.innerHTML = `<span class="pulse">Aguardando as respostas...</span>`;
+        document.getElementById('waiting-message')!.innerText = `Aguardando as respostas...`;
       } else {
         showScreen(screens.response);
       }
@@ -169,10 +150,9 @@ function updateUI(room: RoomState) {
       showScreen(screens.voting);
       votingListDiv.innerHTML = '';
       const canVote = room.responses?.some(res => res.id !== myPlayerId);
-      
       if (!canVote) {
         showScreen(screens.waiting);
-        document.getElementById('waiting-message')!.innerHTML = `<span class="pulse">Aguardando votos dos outros...</span>`;
+        document.getElementById('waiting-message')!.innerText = `Aguardando votos dos outros...`;
       } else {
         room.responses?.forEach((res: AnonymousResponse) => {
           if (res.id === myPlayerId) return;
@@ -184,7 +164,6 @@ function updateUI(room: RoomState) {
             socket?.send(JSON.stringify({ type: GameEventType.SUBMIT_VOTE, payload: { responseId: res.id } }));
             showScreen(screens.waiting);
             document.getElementById('waiting-message')!.innerText = `Voto enviado!`;
-            showToast("Voto computado!", "success");
           };
           votingListDiv.appendChild(card);
         });
@@ -200,7 +179,7 @@ function updateUI(room: RoomState) {
         card.innerHTML = `
           <div style="text-align: left;">
             <div style="font-size:0.7rem; opacity:0.5; text-transform:uppercase; font-weight:800;">${res.authorNickname}</div>
-            <div style="font-size:1.2rem; font-weight:800;">${res.text}</div>
+            <div style="font-size:1.1rem; font-weight:800;">${res.text}</div>
           </div>
           <div class="score-badge">+${res.voteCount * 10}</div>
         `;
@@ -211,12 +190,18 @@ function updateUI(room: RoomState) {
 
     case GameState.GAME_OVER:
       showScreen(screens.waiting);
-      document.getElementById('waiting-message')!.innerText = `Fim de Jogo! Preparando próxima rodada...`;
+      document.getElementById('waiting-message')!.innerText = `Fim de Jogo!`;
       break;
   }
 }
 
-// --- EVENTS ---
+// --- NAVIGATION ---
+goToLoginBtn.onclick = () => { playSound('click'); showScreen(screens.login); };
+goToHowBtn.onclick = () => { playSound('click'); showScreen(screens.howToPlay); };
+backToWelcomeBtn.onclick = () => { playSound('click'); showScreen(screens.welcome); };
+backFromLoginBtn.onclick = () => { playSound('click'); showScreen(screens.welcome); };
+
+// --- ACTIONS ---
 reportBtn.onclick = () => {
   playSound('click');
   if (!lastRoomState) return;
@@ -242,52 +227,37 @@ adminModeBtn.onclick = () => {
   playSound('click');
   isAdminMode = !isAdminMode;
   adminField.style.display = isAdminMode ? 'block' : 'none';
-  connectBtn.innerText = isAdminMode ? 'Entrar como Admin' : 'Entrar como Jogador';
+  adminModeBtn.innerText = isAdminMode ? "Modo Jogador" : "Modo Admin";
 };
 
 connectBtn.onclick = () => {
   playSound('click');
   myNickname = nicknameInput.value.trim();
-  if (!myNickname) return showToast("Escolha um nickname!");
-
+  if (!myNickname) return showToast("Escolha um apelido!");
   const serverUrl = (document.getElementById('server-url') as HTMLInputElement).value;
   socket = new WebSocket(serverUrl);
-
-  socket.onopen = () => showToast("Conectado!", "success");
-
   socket.onmessage = (event) => {
     const data = JSON.parse(event.data);
     if (data.type === "INITIAL_ID") {
       myPlayerId = data.payload.playerId;
-      socket?.send(JSON.stringify({ 
-        type: GameEventType.JOIN_ROOM, 
-        payload: { nickname: myNickname, adminPassword: isAdminMode ? adminPasswordInput.value : "" } 
-      }));
+      socket?.send(JSON.stringify({ type: GameEventType.JOIN_ROOM, payload: { nickname: myNickname, adminPassword: isAdminMode ? adminPasswordInput.value : "" } }));
       return;
     }
     if (data.type === GameEventType.ROOM_STATE_UPDATE) updateUI(data.payload);
     if (data.type === GameEventType.TOAST) showToast(data.payload.message, data.payload.type);
   };
-
-  socket.onclose = () => {
-    showScreen(screens.login);
-    showToast("Conexão encerrada.", "error");
-  };
+  socket.onclose = () => { showScreen(screens.welcome); showToast("Conexão perdida.", "error"); };
 };
 
-startBtn.onclick = () => { playSound('click'); socket?.send(JSON.stringify({ type: GameEventType.START_GAME, payload: {} })); };
-resetBtn.onclick = () => { playSound('click'); socket?.send(JSON.stringify({ type: GameEventType.RESET_GAME, payload: {} })); };
-nextRoundBtn.onclick = () => { playSound('click'); socket?.send(JSON.stringify({ type: GameEventType.NEXT_ROUND, payload: {} })); };
-
+startBtn.onclick = () => socket?.send(JSON.stringify({ type: GameEventType.START_GAME, payload: {} }));
+resetBtn.onclick = () => socket?.send(JSON.stringify({ type: GameEventType.RESET_GAME, payload: {} }));
+nextRoundBtn.onclick = () => socket?.send(JSON.stringify({ type: GameEventType.NEXT_ROUND, payload: {} }));
 submitPromptBtn.onclick = () => {
-  playSound('click');
   const prompt = promptInput.value.trim();
-  if (!prompt) return showToast("Digite a ocasião!");
+  if (!prompt) return showToast("Escreva algo!");
   socket?.send(JSON.stringify({ type: GameEventType.SUBMIT_PROMPT, payload: { prompt } }));
 };
-
 submitResponseBtn.onclick = () => {
-  playSound('click');
   const response = responseInput.value.trim();
   if (!response) return showToast("Escreva algo!");
   socket?.send(JSON.stringify({ type: GameEventType.SUBMIT_RESPONSE, payload: { response } }));
