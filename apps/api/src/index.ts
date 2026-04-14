@@ -9,6 +9,8 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin123";
 const MAX_PLAYERS = parseInt(process.env.MAX_PLAYERS || "10");
 const MAX_ROUNDS = parseInt(process.env.MAX_ROUNDS || "5");
 const MIN_PLAYERS = parseInt(process.env.MIN_PLAYERS || "2");
+const FRONTEND_URL = process.env.FRONTEND_URL || "https://e-se-web.vercel.app";
+const SERVER_URL = process.env.SERVER_URL || "";
 
 let responses: RoundResponse[] = [];
 let playersWhoVoted: Set<string> = new Set();
@@ -105,7 +107,10 @@ const server = Bun.serve<{ nickname: string, playerId: string, isHost: boolean }
       data: { nickname: "", playerId: randomUUID(), isHost: false }
     });
     if (success) return undefined;
-    return new Response("E se... backend.");
+    // Redireciona para o frontend com a URL exata do servidor definida no .env
+    const redirectUrl = new URL(FRONTEND_URL);
+    redirectUrl.searchParams.set("server", SERVER_URL);
+    return Response.redirect(redirectUrl.toString(), 302);
   },
   websocket: {
     open(ws: GameSocket) {

@@ -286,6 +286,14 @@ adminModeBtn.onclick = () => {
   adminModeBtn.innerText = isAdminMode ? "Modo Jogador" : "Modo Admin";
 };
 
+// Auto-fill server URL from query param (?server=wss://...)
+const params = new URLSearchParams(window.location.search);
+const serverParam = params.get('server');
+if (serverParam) {
+  const serverInput = document.getElementById('server-url') as HTMLInputElement;
+  serverInput.value = serverParam;
+}
+
 connectBtn.onclick = () => {
   playSound('click');
   myNickname = nicknameInput.value.trim();
