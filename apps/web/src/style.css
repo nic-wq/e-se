@@ -78,6 +78,16 @@ h1 {
   text-align: center; margin-bottom: 1.5rem; line-height: 1.2;
 }
 
+/* Campos do Login */
+.field {
+  width: 100%;
+  margin-bottom: 1.5rem;
+}
+
+.field:last-of-type {
+  margin-bottom: 2.5rem;
+}
+
 input, textarea {
   width: 100%; background: var(--input-bg);
   border: 1px solid rgba(255, 255, 255, 0.08);
